@@ -6,7 +6,11 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import ExpiringToken
 from .utils import generate_token
+from django.views import View
+from django.utils.decorators import method_decorator
 
+
+# Handles user authentication logic including login, logout, and token management.
 
 @api_view(['POST'])
 def refresh_token(request):
@@ -41,26 +45,35 @@ def api_login(request):
     return Response({'error': 'Invalid credentials'}, status=400)
 
 
-def login_view(request):
-    if request.method == 'POST':
+
+# Handles user login
+class LoginView(View):
+    def get(self, request):
+        return render(request, 'accounts/login.html')
+
+    def post(self, request):
         username = request.POST.get('username')
         password = request.POST.get('password')
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
             return redirect('home')
-        else:
-            return render(request, 'accounts/login.html', {'error': 'Invalid credentials'})
-    return render(request, 'accounts/login.html')
+        return render(request, 'accounts/login.html', {'error': 'Invalid credentials'})
 
 
-def logout_view(request):
-    logout(request)
-    return redirect('login')
+# Handles user logout
+class LogoutView(View):
+    def get(self, request):
+        logout(request)
+        return redirect('login')
 
-@login_required
-def home(request):
-    return render(request, 'accounts/home.html')
+
+# Shows the homepage, requires login
+@method_decorator(login_required, name='dispatch')
+class HomeView(View):
+    def get(self, request):
+        return render(request, 'accounts/home.html')
+
 
 
 
